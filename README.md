@@ -14,6 +14,6 @@ Team Effort: Collaborative development by a 3-person team.
 The Team
 We are part of the Akana team, working together for this course:
 
-Nisanur Özpehlivan
-Rana Sultan Koca
+Nisanur Özpehlivan,
+Rana Sultan Koca,
 Şevval Türkan Kafes

@@ -1,398 +1,247 @@
+#define _CRT_SECURE_NO_WARNINGS 1
 #include <stdio.h>
 #include <stdlib.h>
-#include <windows.h> // enableVirtualTerminal ve GetStdHandle için
-#include <time.h>    // srand(time(NULL)) için
-#include <string.h>  // string fonksiyonları için
-#include <ctype.h>   // toUpper için
+#include <windows.h>
+#include <time.h>
+#include <string.h>
+#include <ctype.h>
+#include <conio.h>
 
-// Wordle oyunu için Sabitler
-#define MAX_WORDS 48
-#define MAX_WORD_LEN 32
-#define MAX_ATTEMPTS 10 // Genel maksimum deneme hakkı
-#define START_TOUR 1
-#define _CRT_SECURE_NO_WARNINGS 1 // Visual Studio'da uyarıları kapatmak için
+#define randnum(min, max) ((rand() % ((max) - (min) + 1)) + (min))
 
-// Global Diziler
-char quiz_words[MAX_WORDS][MAX_WORD_LEN];  // Okunacak kelimeler
-char guess[MAX_ATTEMPTS][MAX_WORD_LEN];    // Tahminler
-int success[MAX_ATTEMPTS][MAX_WORD_LEN];   // Başarı durumu (0: yanlış, 1: yanlış yer, 2: doğru)
-int selectedQuiz = 0; // Seçilen kelimenin indeksi
-int devam = 1;        // Oyun döngüsünü kontrol eden bayrak
+#define MAX_TOUR 6
+#define START_TOUR 3
 
-// Global Değişkenler
-int selectedCategory = 0;
-int word_count_global = 0;
-int current_word_length = 0;
-int current_max_attempts = 0; // Mevcut kategoriye özel deneme hakkı
+char quiz_words[100][10];
+char guess[10][10];
+int success[10][10];
+char hedefKelime[10];
+char kategoriAdi[20];
 
-// Kategori Bilgileri
-char* categories[] = {"hayvan.txt", "ulke.txt", "sehir.txt", "bitki.txt"};
-char* category_names[] = {"HAYVAN", "ULKE", "SEHIR", "BITKI"};
-int category_word_lengths[] = {3, 4, 5, 6};    // Kategoriye özel kelime uzunlukları
-int category_max_attempts[] = {4, 5, 6, 6}; // Kategoriye özel deneme hakları
+int selectedQuiz = 0;
+int current_lives = 0;
+int max_lives_for_level = 0;
+int ilkGirisRehber = 1;
 
-// Fonksiyon Prototipleri (Fotoğraftakine benzer ve mevcut koda uygun)
+/* Fonksiyonlar */
+int fileRead(int category_index, int tour);
 void select_word();
-int fileRead(int tour);
-void display(int mode, int quizNo);
+void display(int tourVal, int maxHak);
 int checkRow(int guessNo);
 int play(int tour);
-void decision(int tour);
 void reset_arrays();
-void toUpperCase(char *str);
-void clearScreen();
-void enableVirtualTerminal();
-int randnum(int min, int max);
-void select_random_category();
-void show_game_stats(int won, int attempts);
-void trim_newline(char *s);
+void drawHearts();
 
-// Ana Fonksiyon
-int main()
-{
-    // Rastgele sayı üreteci başlangıcı
-    srand((unsigned)time(NULL));
-    enableVirtualTerminal(); // Renkli çıktılar için (Windows'ta)
-    int tour = START_TOUR;
+/* ===================== MAIN ===================== */
+int main() {
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD dwMode = 0;
+    GetConsoleMode(hOut, &dwMode);
+    SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 
-    // Ana oyun döngüsü
-    while (devam)
-    {
-        reset_arrays();          // Dizileri sıfırla
-        select_random_category(); // Rastgele bir kategori seç
-        
-        // Dosya okuma ve kelime seçimi
-        if (!fileRead(tour)) {
-            break; // Dosya okunamıyorsa döngüyü sonlandır
+    srand((unsigned int)time(NULL));
+
+    int oyunDevam = 1;
+
+    while (oyunDevam) {
+        int tour = START_TOUR;
+        int oyunKaybedildi = 0;
+
+        while (tour <= MAX_TOUR) {
+            reset_arrays();
+
+            int random_cat = randnum(0, 3);
+            if (!fileRead(random_cat, tour)) continue;
+
+            if (!play(tour)) {
+                oyunKaybedildi = 1;
+                break;
+            }
+
+            if (tour < MAX_TOUR) {
+                printf("\n\x1b[94mTEBRIKLER! %d harfli kelimeyi bildiniz.\x1b[0m", tour);
+                printf("\nDevam etmek icin [ENTER]");
+                while (_getch() != 13);
+            }
+
+            tour++;
+            ilkGirisRehber = 0;
         }
 
-        play(tour);    // Oyun turunu oyna
-        decision(tour); // Tekrar oynama kararı
-        tour++;        // Tur sayısını artır
+        if (oyunKaybedildi) {
+            printf("\n\x1b[101m\x1b[37m OYUN BITTI \x1b[0m");
+            printf("\nDogru cevap: \x1b[92m%s\x1b[0m\n", hedefKelime);
+        } else {
+            printf("\n\x1b[102m\x1b[30m TUM SEVIYELERI GECTIN! \x1b[0m\n");
+        }
+
+        printf("\nTekrar oynamak ister misiniz? [ENTER] / [ESC]");
+        int tus = _getch();
+        if (tus == 13) {
+            system("cls");
+            ilkGirisRehber = 1;
+        } else oyunDevam = 0;
     }
     return 0;
 }
 
-// Windows konsolunda ANSI renk kodlarını etkinleştirir
-void enableVirtualTerminal() {
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOut == INVALID_HANDLE_VALUE) return;
-    DWORD dwMode = 0;
-    if (!GetConsoleMode(hOut, &dwMode)) return;
-    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-    SetConsoleMode(hOut, dwMode);
+/* ===================== GORSEL ===================== */
+void drawHearts() {
+    printf("\x1b[97mHP: ");
+    for (int i = 0; i < max_lives_for_level; i++) {
+        if (i < current_lives)
+            printf("\x1b[31m%c \x1b[0m", 3);
+        else
+            printf("\x1b[90m%c \x1b[0m", 3);
+    }
+    printf("\x1b[37m(%d/%d)\n", current_lives, max_lives_for_level);
 }
 
-// Global dizileri (tahminler, başarı durumu ve kelimeler) sıfırlar
-void reset_arrays() {
-    memset(guess, '\0', sizeof(guess));
-    memset(success, 0, sizeof(success));
-    memset(quiz_words, '\0', sizeof(quiz_words));
-}
+void display(int tourVal, int maxHak) {
+    system("cls");
 
-// Rastgele bir kategori seçer ve oyun parametrelerini ayarlar
-void select_random_category() {
-    selectedCategory = randnum(0, 3);
-    current_word_length = category_word_lengths[selectedCategory];
-    current_max_attempts = category_max_attempts[selectedCategory];
-}
-
-// Dosyadan kelimeleri okur
-int fileRead(int tour) {
-    (void)tour;
-    char* filename = categories[selectedCategory];
-    char filepath[260];
-    FILE *file = NULL;
-
-    // Dosya yolu denemeleri (Mevcut kodunuzdan alındı)
-    file = fopen(filename, "r");
-    // ... diğer fopen denemeleri ...
-
-    if (file == NULL) {
-        clearScreen();
-        printf("\n===========================================\n");
-        printf("          HATA: DOSYA BULUNAMADI!\n");
-        printf("===========================================\n");
-        printf("\nAranan dosya: %s\n", filename);
-        devam = 0;
-        return 0;
+    if (ilkGirisRehber) {
+        printf("\x1b[96m=== WE CAN'T C | WORDLE ADVENTURE ===\x1b[0m\n\n");
+        printf("\x1b[42m A \x1b[0m Dogru yer | ");
+        printf("\x1b[43m A \x1b[0m Yanlis yer | ");
+        printf("\x1b[100m A \x1b[0m Yok\n");
+        printf("\x1b[90mYanlis tahmin = 1 can gider\x1b[0m\n");
+        printf("--------------------------------------------------\n\n");
     }
 
-    int count = 0;
-    char temp_line[MAX_WORD_LEN];
+    printf("\x1b[96mWE CAN'T C TEAM - WORDLE\x1b[0m\n");
+    drawHearts();
+    printf("Kategori: \x1b[93m%s\x1b[0m | Seviye: %d harf\n\n", kategoriAdi, tourVal);
 
-    printf("\n--- Okunan Kelimeler ---\n");
-    
-    // Kelimeleri dinamik olarak okuma ve kaydetme
-    while (fgets(temp_line, sizeof(temp_line), file) != NULL) {
-        
-        trim_newline(temp_line); // Satır sonu karakterlerini temizle
-        
-        if (strlen(temp_line) == 0) continue; // Boş satırları atla
-        if (count >= MAX_WORDS) break; // Dizi sınırını aşma kontrolü
-
-        // Kelimenin tamamını kopyala (MAX_WORD_LEN-1 ile sınırlandırılmış)
-        strncpy(quiz_words[count], temp_line, MAX_WORD_LEN-1);
-        quiz_words[count][MAX_WORD_LEN-1] = '\0'; // NULL sonlandırma
-        
-        toUpperCase(quiz_words[count]); // Büyük harfe çevir
-        
-        // Opsiyonel: Okunan kelimeyi görelim
-        printf("%s (%zu Harf)\n", quiz_words[count], strlen(quiz_words[count])); 
-        
-        count++;
+    for (int i = 0; i < maxHak; i++) {
+        if (guess[i][0] != 'x') {
+            for (int j = 0; j < tourVal; j++) {
+                if (success[i][j] == 1)
+                    printf("\x1b[42m %c \x1b[0m ", guess[i][j]);
+                else if (success[i][j] == 2)
+                    printf("\x1b[43m %c \x1b[0m ", guess[i][j]);
+                else
+                    printf("\x1b[100m %c \x1b[0m ", guess[i][j]);
+            }
+        } else {
+            for (int k = 0; k < tourVal; k++)
+                printf("\x1b[100m   \x1b[0m ");
+        }
+        printf("\n\n");
     }
 
-    printf("--------------------------\n\n");
-
-    word_count_global = count;
-    fclose(file);
-
-    if (word_count_global == 0) {
-        printf("\nHata: %s dosyasi bos veya okunamadi!\n", filename);
-        devam = 0;
-        return 0;
+    /* === KATEGORI KELIMELERI === */
+    printf("\x1b[95m=== %s KELIME HAVUZU ===\x1b[0m\n", kategoriAdi);
+    for (int i = 0; i < selectedQuiz; i++) {
+        printf("%s  ", quiz_words[i]);
+        if ((i + 1) % 5 == 0) printf("\n");
     }
-    
-    // ÖNEMLİ: current_word_length'ı dosyadan gelen ilk kelimenin gerçek uzunluğuna göre ayarla
-    // Bu, 3, 4, 5 veya 6 harfli kelimelerle dinamik olarak çalışmayı sağlar.
-    current_word_length = (int)strlen(quiz_words[0]); 
-    // Deneme hakkını da kategori ayarlarına göre geri getiriyoruz:
-    current_max_attempts = category_max_attempts[selectedCategory];
-    
-    select_word();
-    return 1;
+    printf("\n");
 }
 
-
-// quiz_words dizisinden rastgele bir kelime seçer
-void select_word() {
-    selectedQuiz = randnum(0, word_count_global - 1);
-}
-
-// Belirtilen aralıkta (min ve max dahil) rastgele sayı üretir
-int randnum(int min, int max) {
-    if (max < min) return min;
-    return min + rand() % (max - min + 1);
-}
-
-// Oyunun oynandığı ana döngü
-
+/* ===================== OYUN ===================== */
 int play(int tour) {
-    (void)tour;
-    int attempts = 0;
-    int won = 0;
-    char input_buffer[MAX_WORD_LEN];
+    int maxHak = tour + 1;
+    max_lives_for_level = maxHak;
+    current_lives = maxHak;
 
-    while (attempts < current_max_attempts && !won) {
-        clearScreen();
-        display(1, attempts);
+    select_word();
 
-        printf("\nTahmin %d/%d: ", attempts + 1, current_max_attempts);
+    for (int d = 0; d < maxHak; d++) {
+        char input[20];
 
-        if (fgets(input_buffer, sizeof(input_buffer), stdin) == NULL) {
-            printf("Hata: Giris yapilamadi!\n");
-            continue;
-        }
-        trim_newline(input_buffer);
-        toUpperCase(input_buffer);
+        while (1) {
+            display(tour, maxHak);
 
-        if ((int)strlen(input_buffer) != current_word_length) {
-            printf("\n\033[41m\033[37m UYARI \033[0m Lutfen %d harfli bir kelime girin!\n", current_word_length);
-            printf("Devam etmek icin Enter'a basin...");
-            fgets(input_buffer, sizeof(input_buffer), stdin);
-            continue;
-        }
+            if (current_lives <= 0)
+                return 0;
 
-        // Geçerli tahmin kaydet ve kontrol et
-        strncpy(guess[attempts], input_buffer, MAX_WORD_LEN-1);
-        guess[attempts][MAX_WORD_LEN-1] = '\0';
-        checkRow(attempts);
+            printf("\nTahmin gir: ");
+            scanf("%s", input);
 
-        // Kazanma kontrolü
-        won = 1;
-        for (int i = 0; i < current_word_length; i++) {
-            if (success[attempts][i] != 2) {
-                won = 0;
+            if (strlen(input) != (size_t)tour) {
+                printf("\n\x1b[31m%d harfli kelime gir!\x1b[0m", tour);
+                Sleep(700);
+            } else {
+                strcpy(guess[d], input);
                 break;
             }
         }
-        attempts++;
 
-        if (won) {
-            clearScreen();
-            display(1, attempts);
-            show_game_stats(1, attempts);
+        if (checkRow(d)) {
+            display(tour, maxHak);
             return 1;
         }
+        current_lives--;
     }
-
-    // Kaybetme durumu
-    if (!won) {
-        clearScreen();
-        display(1, attempts);
-        show_game_stats(0, attempts);
-    }
-
     return 0;
 }
 
-// Oyun sonu istatistiklerini gösterir
-void show_game_stats(int won, int attempts) {
-    printf("\n\n");
-    if (won) {
-        printf("===========================================\n");
-        printf("  \033[42m\033[30m  TEBRIKLER! KAZANDINIZ!  \033[0m\n");
-        printf("===========================================\n");
-        printf("Dogru Kelime: \033[1;32m%s\033[0m\n", quiz_words[selectedQuiz]);
-        printf("Toplam Deneme: %d / %d\n", attempts, current_max_attempts);
+/* ===================== DOSYA ===================== */
+int fileRead(int category_index, int tour) {
+    FILE* file = NULL;
 
-        int success_percent = (int)((float)(current_max_attempts - attempts + 1) / current_max_attempts * 100.0f);
-        if (success_percent < 0) success_percent = 0;
-        printf("Basari Yuzdesi: %d%%\n", success_percent);
-    } else {
-        printf("===========================================\n");
-        printf("  \033[41m\033[37m  MAALESEF KAYBETTINIZ!  \033[0m\n");
-        printf("===========================================\n");
-        printf("Dogru Kelime: \033[1;33m%s\033[0m\n", quiz_words[selectedQuiz]);
-        printf("Toplam Deneme: %d / %d\n", attempts, current_max_attempts);
+    if (category_index == 0) { file = fopen("hayvan.txt", "r"); strcpy(kategoriAdi, "HAYVANLAR"); }
+    if (category_index == 1) { file = fopen("ulke.txt", "r"); strcpy(kategoriAdi, "ULKELER"); }
+    if (category_index == 2) { file = fopen("sehir.txt", "r"); strcpy(kategoriAdi, "SEHIRLER"); }
+    if (category_index == 3) { file = fopen("bitki.txt", "r"); strcpy(kategoriAdi, "BITKILER"); }
+
+    if (!file) return 0;
+
+    char line[100];
+    int i = 0;
+
+    while (fgets(line, sizeof(line), file) && i < 100) {
+        line[strcspn(line, "\r\n")] = 0;
+        if (strlen(line) == (size_t)tour)
+            strcpy(quiz_words[i++], line);
     }
-    printf("===========================================\n");
-    printf("\nDevam etmek icin Enter'a basin...");
-    char tmp[MAX_WORD_LEN];
-    fgets(tmp, sizeof(tmp), stdin); // Kullanıcının Enter'a basmasını bekle
+
+    selectedQuiz = i;
+    fclose(file);
+    return i > 0;
 }
 
-// Tahmin edilen satırı (guessNo) doğru kelimeye göre kontrol eder ve success dizisini doldurur
-int checkRow(int guessNo) {
-    char temp_correct[MAX_WORD_LEN];
-    char temp_guess[MAX_WORD_LEN];
+void select_word() {
+    int r = randnum(0, selectedQuiz - 1);
+    strcpy(hedefKelime, quiz_words[r]);
+    for (int i = 0; hedefKelime[i]; i++)
+        hedefKelime[i] = toupper(hedefKelime[i]);
+}
 
-    strncpy(temp_correct, quiz_words[selectedQuiz], MAX_WORD_LEN-1);
-    temp_correct[MAX_WORD_LEN-1] = '\0';
-    strncpy(temp_guess, guess[guessNo], MAX_WORD_LEN-1);
-    temp_guess[MAX_WORD_LEN-1] = '\0';
+int checkRow(int g) {
+    int len = strlen(hedefKelime);
+    int used[10] = {0};
+    int dogru = 0;
 
-    // success dizisini sıfırla
-    for (int i = 0; i < current_word_length; i++) success[guessNo][i] = 0;
+    for (int i = 0; i < len; i++)
+        guess[g][i] = toupper(guess[g][i]);
 
-    // 1. Aşama: Yeşilleri (Doğru Harf & Doğru Yer) işaretle
-    for (int i = 0; i < current_word_length; i++) {
-        if (temp_guess[i] == temp_correct[i]) {
-            success[guessNo][i] = 2; // Yeşil
-            temp_correct[i] = '*';   // Doğru kelimedeki harfi tüket
-            temp_guess[i] = '#';     // Tahmindeki harfi tüket
-        }
+    for (int i = 0; i < len; i++) {
+        if (guess[g][i] == hedefKelime[i]) {
+            success[g][i] = 1;
+            used[i] = 1;
+            dogru++;
+        } else success[g][i] = 0;
     }
 
-    // 2. Aşama: Sarıları (Doğru Harf & Yanlış Yer) işaretle
-    for (int i = 0; i < current_word_length; i++) {
-        if (temp_guess[i] != '#') { // Tüketilmiş harfleri atla
-            for (int j = 0; j < current_word_length; j++) {
-                if (temp_guess[i] == temp_correct[j]) {
-                    success[guessNo][i] = 1; // Sarı
-                    temp_correct[j] = '*';   // Doğru kelimedeki harfi tüket
-                    break;
-                }
+    for (int i = 0; i < len; i++) {
+        if (success[g][i]) continue;
+        for (int j = 0; j < len; j++) {
+            if (!used[j] && guess[g][i] == hedefKelime[j]) {
+                success[g][i] = 2;
+                used[j] = 1;
+                break;
             }
         }
     }
-
-    return 1;
+    return dogru == len;
 }
 
-// Oyun ekranını ve tahmin tahtasını gösterir
-void display(int mode, int quizNo) {
-    (void)mode;
-    printf("\n");
-    printf("===========================================\n");
-    printf("            WORDLE OYUNU\n");
-    printf("===========================================\n");
-    printf("Kategoriniz: \033[1;36m%s\033[0m\n", category_names[selectedCategory]);
-    printf("Kelime Uzunlugu: %d harf\n", current_word_length);
-    printf("Deneme Hakkiniz: %d\n", current_max_attempts);
-    printf("===========================================\n");
-    printf("Suan: %d / %d deneme\n", quizNo, current_max_attempts);
-
-    printf("Ilerleme: [");
-    for (int i = 0; i < current_max_attempts; i++) {
-        if (i < quizNo) printf("\033[32m■\033[0m");
-        else printf("□");
-    }
-    printf("]\n");
-    printf("===========================================\n\n");
-
-    if (quizNo > 0) {
-        printf("--- TAHMINLERINIZ ---\n\n");
-        for (int i = 0; i < quizNo; i++) {
-            printf("  ");
-            for (int j = 0; j < current_word_length; j++) {
-                char ch = guess[i][j];
-                if (ch == '\0') ch = ' ';
-                
-                // ANSI renk kodları ile çıktı
-                if (success[i][j] == 2) {
-                    printf("\033[42m\033[30m %c \033[0m ", ch); // Yeşil (Doğru yer)
-                } else if (success[i][j] == 1) {
-                    printf("\033[43m\033[30m %c \033[0m ", ch); // Sarı (Yanlış yer)
-                } else {
-                    printf("\033[41m\033[37m %c \033[0m ", ch); // Kırmızı (Yanlış harf)
-                }
-            }
-            printf("\n");
+void reset_arrays() {
+    for (int i = 0; i < 10; i++)
+        for (int j = 0; j < 10; j++) {
+            guess[i][j] = 'x';
+            success[i][j] = 0;
         }
-        printf("\n");
-    }
-
-    printf("Renk Aciklamasi: ");
-    printf("\033[42m\033[30m YESIL \033[0m = Dogru yer  ");
-    printf("\033[43m\033[30m SARI \033[0m = Yanlis yer  ");
-    printf("\033[41m\033[37m KIRMIZI \033[0m = Yanlis harf\n");
-}
-
-// Oyuncuya tekrar oynamak isteyip istemediğini sorar
-void decision(int tour) {
-    (void)tour;
-    printf("\n\nTekrar oynamak ister misiniz? (E/H): ");
-    char choice[8];
-    if (fgets(choice, sizeof(choice), stdin) == NULL) {
-        devam = 0;
-        return;
-    }
-    // Sadece ilk karaktere bak ve büyük/küçük harf duyarlılığını kaldır
-    if (toupper((unsigned char)choice[0]) == 'E') {
-        devam = 1;
-    } else {
-        devam = 0;
-        clearScreen();
-        printf("\n\n");
-        printf("===========================================\n");
-        printf("      OYUN BITTI! TESEKKURLER!\n");
-        printf("===========================================\n");
-        printf("\n  Oynadiginiz icin tesekkurler!\n");
-        printf("  Tekrar bekleriz! :)\n");
-        printf("\n===========================================\n\n");
-    }
-}
-
-// Konsol ekranını temizler (Windows için "cls")
-void clearScreen() {
-    system("cls");
-}
-
-// Verilen dizideki tüm karakterleri büyük harfe çevirir
-void toUpperCase(char *str) {
-    for (int i = 0; str[i]; i++) {
-        str[i] = (char)toupper((unsigned char)str[i]);
-    }
-}
-
-// Dizinin sonundaki yeni satır (\n) veya satır başı (\r) karakterlerini siler
-void trim_newline(char *s) {
-    if (!s) return;
-    size_t len = strlen(s);
-    while (len > 0 && (s[len-1] == '\n' || s[len-1] == '\r')) {
-        s[len-1] = '\0';
-        len--;
-    }
 }

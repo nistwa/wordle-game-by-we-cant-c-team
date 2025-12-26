@@ -12,7 +12,7 @@ Categories: Dynamically loads words from text files (bitki.txt, sehir.txt, etc.)
 Team Effort: Collaborative development by a 3-person team.
 
 The Team
-We are part of the Akana team, working together for this course:
+We are part of the we cant c team, working together for this course:
 
 Nisanur Özpehlivan,
 Rana Sultan Koca,

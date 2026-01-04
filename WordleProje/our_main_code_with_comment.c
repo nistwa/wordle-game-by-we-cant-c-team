@@ -253,16 +253,15 @@ int fileRead(int category_index, int tour) {
         file = fopen("hayvan.txt", "r");          // Hayvanlar kategorisi dosyasını açar
         strcpy(kategoriAdi, "HAYVANLAR");         // Kategori adını ayarlar
     }
-    }
-    if (category_index == 1) {
+    else if (category_index == 1) {
         file = fopen("ulke.txt", "r");
         strcpy(kategoriAdi, "ULKELER");
     }
-    if (category_index == 2) {
+    else if (category_index == 2) {
         file = fopen("sehir.txt", "r");
         strcpy(kategoriAdi, "SEHIRLER");
     }
-    if (category_index == 3) {
+    else if (category_index == 3) {
         file = fopen("bitki.txt", "r");
         strcpy(kategoriAdi, "BITKILER");
     }
@@ -276,7 +275,6 @@ int fileRead(int category_index, int tour) {
     while (fgets(line, sizeof(line), file) != NULL) {      // Dosyadan satır satır okur
         line[strcspn(line, "\r\n")] = 0;                  // Satır sonu karakterlerini temizler
 
-        
         if (strlen(line) == (size_t)tour) {      // Kelime uzunluğu istenen tur uzunluğuna eşitse
             for (int j = 0; j < tour; j++) {     // Kelimenin her harfini
                 quiz_words[i][j] = line[j];      // Kelime havuzuna kopyalar
@@ -290,6 +288,7 @@ int fileRead(int category_index, int tour) {
     fclose(file);      // Açılan dosyayı kapatır
     return i > 0;      // En az bir kelime okunduysa başarılı (1), aksi halde başarısız (0) döndürür
 }
+
 
 void select_word() {
     int r = randnum(0, selectedQuiz - 1);  // Kelime havuzundan rastgele bir indeks seçer

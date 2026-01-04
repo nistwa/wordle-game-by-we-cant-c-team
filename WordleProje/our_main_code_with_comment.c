@@ -207,30 +207,30 @@ void display(int tourVal, int maxHak) {
 
 /* ===================== OYUN ===================== */
 int play(int tour) {
-    int maxHak = tour + 1;
-    max_lives_for_level = maxHak;
-    current_lives = maxHak;
+    int maxHak = tour + 1;                      // Seviye için maksimum tahmin/can sayısı
+    max_lives_for_level = maxHak;               // Seviye bazlı maksimum canı ayarlar
+    current_lives = maxHak;                     // Oyuncunun başlangıç canını ayarlar
 
-    select_word();
+    select_word();                              // Bu seviye için hedef kelimeyi seçer
 
-    for (int d = 0; d < maxHak; d++) {
-        char input[20];
+    for (int d = 0; d < maxHak; d++) {          // Her tahmin hakkı için döngü
+        char input[20];                         // Kullanıcıdan alınan tahmini tutar
         
-        while (1) {
-            display(tour, maxHak);
+        while (1) {                             // Geçerli tahmin girilene kadar döner
+            display(tour, maxHak);              // Oyun ekranını günceller
             
-            if (current_lives <= 0)
-                return 0;
+            if (current_lives <= 0)             // Can kalmadıysa
+                return 0;                       // Seviye kaybedildi
 
-            printf("\nTahmin gir: ");
-            scanf("%s", input);
+            printf("\nTahmin gir: ");           // Kullanıcıdan tahmin ister  
+            scanf("%s", input);                 // Tahmini okur
 
-            if (strlen(input) != (size_t)tour) {
-                printf("\n\x1b[31m%d harfli kelime gir!\x1b[0m", tour);
-                Sleep(700);
+            if (strlen(input) != (size_t)tour) {   // Girilen kelime uzunluğu hatalıysa
+                printf("\n\x1b[31m%d harfli kelime gir!\x1b[0m", tour);  // Uyarı verir
+                Sleep(700);                                              // Mesajın görünmesi için kısa süre bekler
             } else {
-                strcpy(guess[d], input);
-                break;
+                strcpy(guess[d], input);                    // Geçerli tahmini diziye kopyalar
+                break;                                      // Tahmin alma döngüsünden çıkar
             }
         }
 
@@ -247,11 +247,12 @@ int play(int tour) {
 
 /* ===================== DOSYA ===================== */
 int fileRead(int category_index, int tour) {
-    FILE* file = NULL;
+    FILE* file = NULL;                          // Dosya işaretçisi
 
     if (category_index == 0) {
-        file = fopen("hayvan.txt", "r");
-        strcpy(kategoriAdi, "HAYVANLAR");
+        file = fopen("hayvan.txt", "r");          // Hayvanlar kategorisi dosyasını açar
+        strcpy(kategoriAdi, "HAYVANLAR");         // Kategori adını ayarlar
+    }
     }
     if (category_index == 1) {
         file = fopen("ulke.txt", "r");
@@ -266,36 +267,38 @@ int fileRead(int category_index, int tour) {
         strcpy(kategoriAdi, "BITKILER");
     }
 
-    if (!file)
-        return 0;
+    if (!file)                              // Dosya açılamazsa
+        return 0;                           // Okuma başarısız
 
-    char line[100];
-    int i = 0;
+    char line[100];                         // Dosyadan okunan satırı tutar
+    int i = 0;                              // Okunan geçerli kelime sayısı
     
-    while (fgets(line, sizeof(line), file) != NULL) {
-        line[strcspn(line, "\r\n")] = 0;
+    while (fgets(line, sizeof(line), file) != NULL) {      // Dosyadan satır satır okur
+        line[strcspn(line, "\r\n")] = 0;                  // Satır sonu karakterlerini temizler
+
         
-        if (strlen(line) == (size_t)tour) {
-            for (int j = 0; j < tour; j++) {
-                quiz_words[i][j] = line[j];
+        if (strlen(line) == (size_t)tour) {      // Kelime uzunluğu istenen tur uzunluğuna eşitse
+            for (int j = 0; j < tour; j++) {     // Kelimenin her harfini
+                quiz_words[i][j] = line[j];      // Kelime havuzuna kopyalar
             }
-            quiz_words[i][tour] = '\0';
-            i++;
+            quiz_words[i][tour] = '\0';        // String sonlandırıcısını ekler
+            i++;                              // Okunan kelime sayısını artırır
         }
     }
 
-    selectedQuiz = i;
-    fclose(file);
-    return i > 0;
+    selectedQuiz = i;  // Okunan kelime sayısını global değişkende saklar
+    fclose(file);      // Açılan dosyayı kapatır
+    return i > 0;      // En az bir kelime okunduysa başarılı (1), aksi halde başarısız (0) döndürür
 }
 
 void select_word() {
-    int r = randnum(0, selectedQuiz - 1);
-    strcpy(hedefKelime, quiz_words[r]);
+    int r = randnum(0, selectedQuiz - 1);  // Kelime havuzundan rastgele bir indeks seçer
+    strcpy(hedefKelime, quiz_words[r]);    // Seçilen kelimeyi hedef kelimeye kopyalar
 
-    for (int i = 0; hedefKelime[i]; i++)
-        hedefKelime[i] = toupper(hedefKelime[i]);
+    for (int i = 0; hedefKelime[i]; i++)           // Hedef kelimenin tüm karakterleri için
+        hedefKelime[i] = toupper(hedefKelime[i]);  // Harfleri büyük harfe çevirir
 }
+
 
 int checkRow(int g) {
     int len = strlen(hedefKelime);  // Hedef kelimenin uzunluğunu alır
@@ -339,4 +342,3 @@ void reset_arrays() {
             success[i][j] = 0;                   // Harf başarı durumlarını sıfırlar
         }
 }
-

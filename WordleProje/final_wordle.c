@@ -18,7 +18,7 @@
  *
  * --------------------------------------------------------------------------
  * TAKIM ÜYELERİ
- * 1. Şevval Türkan Kafes
+ * 1. Şevval Türkan Kafes 170525041
  * 2. Rana Sultan Koca 170525016
  * 3. Nisanur Özpehlivan 170525844
  * 

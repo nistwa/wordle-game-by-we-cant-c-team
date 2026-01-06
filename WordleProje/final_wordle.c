@@ -22,7 +22,7 @@
  * 2. Rana Sultan Koca 170525016
  * 3. Nisanur Özpehlivan 170525844
  * 
- * --------------------------------------------------------------------------
+ *Ayrıca video çekimlerimiz yardımcı olan Baron nashor takımına teşekkür ederiz.--------------------------------------------------------------------------
  * Meraklısına;
  * Takım üyeleri ve kullanıcı için kodun açıklamaları yorum satırı ile koda entegre edilmiştir.
  *

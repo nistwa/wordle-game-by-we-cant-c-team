@@ -22,10 +22,13 @@
  * 2. Rana Sultan Koca 170525016
  * 3. Nisanur Özpehlivan 170525844
  * 
- *Ayrıca video çekimlerimiz yardımcı olan Baron nashor takımına teşekkür ederiz.--------------------------------------------------------------------------
+ * Ayrıca bize yardımcı olan Baron Nashor takımına teşekkür ederiz.
+ * 
+ * --------------------------------------------------------------------------
  * Meraklısına;
  * Takım üyeleri ve kullanıcı için kodun açıklamaları yorum satırı ile koda entegre edilmiştir.
  *
+ * 
  *****************************************************************************/
 
 
@@ -107,7 +110,7 @@ void oyun_dongusu() {
         int oyunKaybedildi = seviye_dongusu();
 
         if (oyunKaybedildi) {               // Oyuncu herhangi bir seviyede kaybettiyse
-            printf("\n\x1b[101m\x1b[37m OYUN BITTI \x1b[0m");     // Kırmızı arka planla oyun bitti mesajı
+            printf("\n\x1b[101m\x1b[37m OYUN BITTI \x1b[0m");     // Kırmızı arka  oyun bitti mesajı
             printf("\nDogru cevap: \x1b[92m%s\x1b[0m\n", hedefKelime);  // Doğru kelimeyi yeşil renkte gösterir
         } else {                                                          // Tüm seviyeler başarıyla tamamlandıysa
             printf("\n\x1b[102m\x1b[30m TUM SEVIYELERI GECTIN! \x1b[0m\n");  // Yeşil arka planla başarı mesajı

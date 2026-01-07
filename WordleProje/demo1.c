@@ -101,14 +101,14 @@ void drawHearts() {
 void display(int tourVal, int maxHak) {
     system("cls"); 
     if (ilkGirisRehber) {
-        printf("\x1b[96m=== WE-CAN'T-NOT-C: WORDLE ADVENTURE ===\x1b[0m\n\n");
+        printf("\x1b[96m=== WE-CAN'T-C: WORDLE ===\x1b[0m\n\n");
         printf("\x1b[93mOYUN REHBERI VE RENKLER:\x1b[0m\n");
         printf("\x1b[42m\x1b[30m  A  \x1b[0m -> YESIL: Dogru yer.  \x1b[43m\x1b[30m  A  \x1b[0m -> SARI: Yanlis yer.  \x1b[100m  A  \x1b[0m -> GRI: Yok.\n");
         printf("\x1b[93mKURALLAR:\x1b[0m Yanlis tahmin/ipucu 1 \x1b[31m%c\x1b[0m goturur ve 1 SATIR harcar.\n", 3);
         printf("\x1b[90m---------------------------------------------------------------------------\x1b[0m\n\n");
     }
 
-    printf("\x1b[96m=== WE-CAN'T-NOT-C TEAM: WORDLE ===\x1b[0m\n");
+    printf("\x1b[96m=== WE-CAN'T-C TEAM: WORDLE ===\x1b[0m\n");
     drawHearts();
     printf("\x1b[37mKategori: \x1b[93m%s\x1b[0m | Seviye: \x1b[95m%d Harf\x1b[0m\n\n", kategoriAdi, tourVal);
 
@@ -263,3 +263,4 @@ void reset_arrays() {
         }
     }
 }
+
